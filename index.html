@@ -19,7 +19,7 @@
 html,body{min-height:100%}
 body{margin:0;font-family:var(--body);color:var(--chalk);font-size:16px;line-height:1.6;
   background:repeating-linear-gradient(90deg,var(--turf) 0 80px,var(--turf-2) 80px 160px);background-color:var(--turf)}
-.wrap{max-width:780px;margin:0 auto;padding-block:28px 64px;
+.wrap{max-width:800px;margin:0 auto;padding-block:28px 64px;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
   display:flex;flex-direction:column;gap:20px}
 header{display:flex;flex-direction:column;gap:6px;text-align:center;position:relative}
@@ -60,6 +60,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .result p{margin:0}
 .legend{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;font-size:.82rem;color:var(--chalk-dim)}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-inline-end:6px;vertical-align:middle}
+.legend i.ring{background:transparent;border:2px solid var(--hit)}
 #guesses{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;animation:drop .35s ease-out}
 .card.latest{border-color:var(--chalk-dim)}
@@ -71,9 +72,12 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .temp{font-size:.8rem;padding:2px 10px;border-radius:999px;background:rgba(255,255,255,.07);white-space:nowrap}
 .bar{height:6px;border-radius:3px;background:rgba(255,255,255,.08);overflow:hidden}
 .bar i{display:block;height:100%;border-radius:3px}
-.career{font-size:.82rem;color:var(--chalk-dim);display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center}
-.career b{font-weight:500}
-.career .shared{color:#06200f;background:var(--hit);border-radius:4px;padding:0 6px;font-weight:700}
+.career{font-size:.8rem;color:var(--chalk-dim);display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.career span{border:1px solid var(--line);border-radius:5px;padding:0 6px;white-space:nowrap}
+.career span small{opacity:.75;font-variant-numeric:tabular-nums;direction:ltr;display:inline-block;margin-right:6px}
+.career .shared{border:2px solid var(--hit);color:var(--chalk)}
+.career .together{background:var(--hit);border-color:var(--hit);color:#06200f;font-weight:700}
+.links{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .chips{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
 .chip{border-radius:8px;padding:6px 4px;text-align:center;font-size:.78rem;line-height:1.3;background:var(--miss);display:flex;flex-direction:column;gap:1px;min-width:0}
 .chip em{font-style:normal;opacity:.75;font-size:.7rem}
@@ -89,19 +93,107 @@ details td{padding:5px 0;border-bottom:1px solid var(--line)}
 details td:last-child{text-align:left;font-variant-numeric:tabular-nums;color:var(--flood);padding-inline-start:12px}
 @keyframes drop{from{transform:translateY(-6px);opacity:.3}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){.card{animation:none}}
-@media (max-width:640px){.chips{grid-template-columns:repeat(4,minmax(0,1fr))}.chip.wide{grid-column:span 2}.pct{font-size:1.8rem}}
+/* top bar: help + sound */
+.topbar{display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1}
+.icon{width:44px;height:44px;padding:0;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+  background:var(--panel);color:var(--chalk);border:2px solid var(--line);font-family:var(--body);font-weight:700;font-size:1.35rem;line-height:1}
+.icon:hover{border-color:var(--chalk-dim)}
+.icon svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+/* heat meter */
+.meter{display:flex;flex-direction:column;gap:4px}
+.track{position:relative;height:12px;border-radius:6px;
+  background:linear-gradient(to left,hsl(210 90% 58%),hsl(109 90% 58%) 50%,hsl(8 90% 58%));opacity:.9}
+.track i{position:absolute;top:50%;right:0;width:22px;height:22px;border-radius:50%;background:var(--chalk);border:4px solid var(--panel);
+  transform:translate(50%,-50%);box-shadow:0 2px 8px rgba(0,0,0,.4);transition:right .6s cubic-bezier(.2,.8,.2,1)}
+.ends{display:flex;justify-content:space-between;font-size:.8rem;color:var(--chalk-dim)}
+/* list heading + latest badge */
+.sec{margin:0;font-size:1rem;font-weight:700;color:var(--chalk-dim)}
+.card.latest{border:2px solid var(--flood)}
+.badge{display:inline-block;background:var(--flood);color:#1b1a08;font-size:.72rem;font-weight:700;border-radius:999px;padding:1px 8px;margin-bottom:2px}
+/* chip symbols: readable without relying on colour */
+.chip em::before{content:"✗ "}
+.chip.hit em::before{content:"✓ "}
+.chip.near em::before{content:"≈ "}
+/* dropdown meta line */
+.opt{display:flex;flex-direction:column;line-height:1.35}
+.opt .meta{color:var(--chalk-dim);font-size:.8rem;direction:rtl}
+.ghost.armed{border-color:var(--near);color:var(--near)}
+/* how-to-play sheet */
+.modal{position:fixed;inset:0;z-index:20;background:rgba(3,15,10,.78);display:flex;align-items:center;justify-content:center;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.sheet{background:var(--panel);border:2px solid var(--flood);border-radius:16px;max-width:460px;width:100%;max-height:100%;overflow-y:auto;
+  padding:20px;display:flex;flex-direction:column;gap:14px;animation:pop .3s ease-out}
+.sheet h2{font-family:var(--display);font-weight:400;font-size:2rem;margin:0;color:var(--flood);text-align:center;line-height:1.2}
+.steps{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px;counter-reset:s}
+.steps li{display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:start;counter-increment:s}
+.steps li::before{content:counter(s);width:34px;height:34px;border-radius:50%;background:var(--panel-2);border:2px solid var(--flood);color:var(--flood);
+  display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:1.2rem}
+.steps p{margin:0}
+.steps .demo{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.steps .demo .chip{flex:1 1 30%}
+.steps .career{margin-top:6px}
+.sheet .primary{font-size:1.15rem;padding:14px}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:30;width:100%;height:100%}
+.result.celebrate{animation:pop .5s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{from{transform:scale(.92);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.sheet,.result.celebrate{animation:none}.track i{transition:none}}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+/* Phone: bigger type, two-column chips, full-width buttons */
+@media (max-width:640px){
+  body{font-size:17px}
+  .wrap{gap:16px;padding-block:20px 48px}
+  h1{font-size:3rem}
+  .sub{font-size:1rem}
+  .board b{font-size:2rem}
+  .board span{font-size:.9rem}
+  #q{font-size:1.15rem;padding:16px}
+  .guess .primary{flex:1 1 100%;font-size:1.15rem;padding:14px}
+  .tools button{flex:1 1 0;font-size:1rem;padding:12px 8px}
+  .list li{padding:13px 12px;font-size:1.05rem}
+  .msg{font-size:1rem}
+  .hints span{font-size:1rem;padding:6px 14px}
+  .legend{font-size:.92rem;gap:8px 14px}
+  .legend i{width:14px;height:14px}
+  .card{padding:14px;gap:12px}
+  .top{gap:10px}
+  .pct{font-size:2.3rem}
+  .who strong{font-size:1.2rem}
+  .who small{font-size:.9rem}
+  .temp{font-size:.95rem;padding:3px 12px}
+  .bar{height:8px}
+  .career{font-size:.95rem;gap:6px}
+  .career span{padding:2px 8px}
+  .links{grid-template-columns:1fr;gap:8px}
+  .chips{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .chips .chip:last-child{grid-column:span 2}
+  .chip{font-size:1rem;padding:9px 8px;gap:2px}
+  .chip em{font-size:.82rem}
+  .result h2{font-size:2.2rem}
+  .result p{font-size:1.05rem}
+  summary{font-size:1.05rem}
+  details table{font-size:1rem}
+  footer{font-size:.9rem}
+}
 </style>
 
 <div class="wrap" dir="rtl" lang="ar">
   <header>
+    <div class="topbar">
+      <button class="icon" id="helpBtn" type="button" aria-label="إزاي تلعب؟" title="إزاي تلعب؟">؟</button>
+      <button class="icon" id="muteBtn" type="button" aria-label="الصوت شغال، اضغط للكتم" title="الصوت" aria-pressed="false"></button>
+    </div>
     <h1>مين اللاعب؟</h1>
-    <p class="sub">في لاعب سري من أحسن 120 لاعب من 2005 لحد النهارده. اكتب اسم أي لاعب، وهنقولك هو قريب منه بنسبة كام في المية.</p>
+    <p class="sub">في لاعب سري من أحسن 147 لاعب من 2005 لحد النهارده. اكتب اسم أي لاعب، وهنقولك هو قريب منه بنسبة كام في المية.</p>
   </header>
 
   <div class="board" aria-live="polite">
     <div><b id="sTries">0</b><span>محاولات</span></div>
     <div><b id="sBest">0%</b><span>أعلى نسبة</span></div>
     <div><b id="sWins">0</b><span>مرات الفوز</span></div>
+  </div>
+  <div class="meter" aria-hidden="true">
+    <div class="track"><i id="mark"></i></div>
+    <div class="ends"><span>تلج 0%</span><span>أقرب تخمين ليك</span><span>نار 100%</span></div>
   </div>
 
   <form class="guess" id="form" autocomplete="off">
@@ -123,43 +215,70 @@ details td:last-child{text-align:left;font-variant-numeric:tabular-nums;color:va
   <div class="result" id="result" hidden></div>
 
   <div class="legend">
-    <span><i style="background:var(--hit)"></i>نفس المعلومة</span>
+    <span><i style="background:var(--hit)"></i>نفس المعلومة / لعبوا مع بعض</span>
+    <span><i class="ring"></i>نفس النادي في وقت مختلف</span>
     <span><i style="background:var(--near)"></i>قريب</span>
     <span><i style="background:var(--miss)"></i>مختلف</span>
     <span>↑ اللاعب السري أكبر سنًا · ↓ أصغر</span>
   </div>
 
+  <h2 class="sec" id="listTitle" hidden>تخميناتك، والأقرب فوق</h2>
   <ol id="guesses"></ol>
 
   <details>
     <summary>إزاي بنحسب النسبة؟</summary>
     <table>
-      <tr><td>لعبوا في نفس النادي قبل كده (نادي واحد 14 · ناديين أو أكتر 20)</td><td>20</td></tr>
-      <tr><td>نفس النادي الحالي أو آخر نادي</td><td>15</td></tr>
-      <tr><td>لعبوا في نفس الدوري في أي وقت</td><td>10</td></tr>
-      <tr><td>نفس الجنسية</td><td>20</td></tr>
+      <tr><td>لعبوا مع بعض في نفس الفريق في نفس الوقت</td><td>25</td></tr>
+      <tr><td>لعبوا في نفس النادي في أي وقت</td><td>10</td></tr>
+      <tr><td>نفس النادي الحالي أو آخر نادي</td><td>10</td></tr>
+      <tr><td>لعبوا في نفس الدوري في أي وقت</td><td>5</td></tr>
+      <tr><td>نفس الجنسية</td><td>15</td></tr>
       <tr><td>نفس القارة</td><td>5</td></tr>
-      <tr><td>المركز (نفس المركز 20 · نفس الخط 12 · خط مجاور 5)</td><td>20</td></tr>
-      <tr><td>سنة الميلاد (بتقل كل ما الفرق يزيد، لحد 10 سنين)</td><td>5</td></tr>
+      <tr><td>المركز (نفس المركز 15 · نفس الخط 8)</td><td>15</td></tr>
+      <tr><td>السن (بيقل كل ما الفرق يزيد، لحد 10 سنين)</td><td>5</td></tr>
       <tr><td>القدم المفضلة</td><td>5</td></tr>
+      <tr><td>الاتنين لسه بيلعبوا أو الاتنين معتزلين</td><td>5</td></tr>
     </table>
   </details>
 
-  <footer>المسيرة فيها أهم أندية كل لاعب، ومن غير الإعارات القصيرة في الغالب. المعلومات لحد موسم 2025/2026.</footer>
+  <footer>المسيرة فيها أهم أندية كل لاعب بالسنين، ومن غير الإعارات القصيرة في الغالب. المعلومات لحد موسم 2025/2026.</footer>
 </div>
 
+<div class="modal" id="help" dir="rtl" lang="ar" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
+  <div class="sheet">
+    <h2 id="helpTitle">إزاي تلعب؟</h2>
+    <ol class="steps">
+      <li><p><b>فيه لاعب سري.</b> اكتب اسم أي لاعب تعرفه واضغط "خمّن". مش لازم تكتب الاسم مظبوط.</p></li>
+      <li><div><p><b>هتطلعلك نسبة.</b> كل ما النسبة تعلى، يبقى انت قربت من اللاعب السري.</p>
+        <div class="meter" style="margin-top:8px"><div class="track"><i style="right:72%"></i></div><div class="ends"><span>تلج</span><span>نار</span></div></div></div></li>
+      <li><div><p><b>الخانات بتقولك إيه المشترك بينهم.</b></p>
+        <div class="demo">
+          <div class="chip hit"><em>الجنسية</em><span>نفس الحاجة</span></div>
+          <div class="chip near"><em>المركز</em><span>قريب</span></div>
+          <div class="chip"><em>القدم</em><span>مختلف</span></div>
+        </div>
+        <div class="career"><span class="together">برشلونة</span><span>لعبوا مع بعض</span></div>
+        <div class="career"><span class="shared">برشلونة</span><span>نفس النادي في وقت مختلف</span></div></div></li>
+      <li><p><b>اتزنقت؟</b> اضغط "تلميح" وهنكشفلك معلومة عن اللاعب السري.</p></li>
+    </ol>
+    <button class="primary" id="helpClose" type="button">يلا نلعب</button>
+  </div>
+</div>
+<canvas id="fx" hidden></canvas>
+
 <script>
+const NOW=new Date().getFullYear();
 const NAT={
  EG:["مصر","AF"],MA:["المغرب","AF"],DZ:["الجزائر","AF"],SN:["السنغال","AF"],NG:["نيجيريا","AF"],CM:["الكاميرون","AF"],CI:["كوت ديفوار","AF"],
- KR:["كوريا الجنوبية","AS"],
+ KR:["كوريا الجنوبية","AS"],CR:["كوستاريكا","NA"],
  AR:["الأرجنتين","SA"],BR:["البرازيل","SA"],UY:["أوروغواي","SA"],CO:["كولومبيا","SA"],CL:["تشيلي","SA"],
  EN:["إنجلترا","EU"],WA:["ويلز","EU"],FR:["فرنسا","EU"],ES:["إسبانيا","EU"],DE:["ألمانيا","EU"],PT:["البرتغال","EU"],NL:["هولندا","EU"],BE:["بلجيكا","EU"],IT:["إيطاليا","EU"],
- NO:["النرويج","EU"],SE:["السويد","EU"],HR:["كرواتيا","EU"],PL:["بولندا","EU"],SI:["سلوفينيا","EU"],GE:["جورجيا","EU"],UA:["أوكرانيا","EU"],CZ:["التشيك","EU"]
+ NO:["النرويج","EU"],SE:["السويد","EU"],HR:["كرواتيا","EU"],PL:["بولندا","EU"],SI:["سلوفينيا","EU"],GE:["جورجيا","EU"],UA:["أوكرانيا","EU"],CZ:["التشيك","EU"],SC:["اسكتلندا","EU"]
 };
 const CONT={AF:"أفريقيا",AS:"آسيا",SA:"أمريكا الجنوبية",NA:"أمريكا الشمالية",EU:"أوروبا"};
 const LEAGUE={EPL:"الإنجليزي",LIGA:"الإسباني",SA:"الإيطالي",BUN:"الألماني",L1:"الفرنسي",SPL:"السعودي",MLS:"الأمريكي",EGY:"المصري",TUR:"التركي",
  BRA:"البرازيلي",ARG:"الأرجنتيني",POR:"البرتغالي",NED:"الهولندي",QAT:"القطري",UAE:"الإماراتي",JPN:"الياباني",SWE:"السويدي",NOR:"النرويجي",AUT:"النمساوي",
- SUI:"السويسري",BEL:"البلجيكي",SCO:"الاسكتلندي",CRO:"الكرواتي",POL:"البولندي",UKR:"الأوكراني",URU:"الأوروغوياني",MEX:"المكسيكي",AUS:"الأسترالي",GRE:"اليوناني"};
+ SUI:"السويسري",BEL:"البلجيكي",SCO:"الاسكتلندي",CRO:"الكرواتي",POL:"البولندي",UKR:"الأوكراني",URU:"الأوروغوياني",MEX:"المكسيكي",AUS:"الأسترالي",GRE:"اليوناني",COL:"الكولومبي",CHI:"التشيلي"};
 const CLUB={
  LIV:["ليفربول","EPL"],MCI:["مانشستر سيتي","EPL"],ARS:["أرسنال","EPL"],CHE:["تشيلسي","EPL"],MUN:["مانشستر يونايتد","EPL"],TOT:["توتنهام","EPL"],AVL:["أستون فيلا","EPL"],
  EVE:["إيفرتون","EPL"],WHU:["وست هام","EPL"],LEI:["ليستر سيتي","EPL"],SOU:["ساوثهامبتون","EPL"],LEE:["ليدز","EPL"],QPR:["كوينز بارك رينجرز","EPL"],
@@ -172,190 +291,249 @@ const CLUB={
  MIA:["إنتر ميامي","MLS"],LAG:["لوس أنجلوس جالاكسي","MLS"],NYC:["نيويورك سيتي","MLS"],NYRB:["نيويورك ريد بولز","MLS"],ORL:["أورلاندو سيتي","MLS"],DCU:["دي سي يونايتد","MLS"],CHF:["شيكاغو فاير","MLS"],LAFC:["لوس أنجلوس إف سي","MLS"],VAN:["فانكوفر","MLS"],
  AHLY:["الأهلي","EGY"],MOK:["المقاولون العرب","EGY"],
  GAL:["جالطة سراي","TUR"],FEN:["فنربخشة","TUR"],BES:["بشكتاش","TUR"],
- SAN:["سانتوس","BRA"],FLA:["فلامنجو","BRA"],FLU:["فلومينينسي","BRA"],GRE:["جريميو","BRA"],SAO:["ساو باولو","BRA"],COR:["كورينثيانز","BRA"],INTE:["إنترناسيونال","BRA"],AMG:["أتلتيكو مينيرو","BRA"],
- RIV:["ريفر بليت","ARG"],BOC:["بوكا جونيورز","ARG"],IND:["إندبندينتي","ARG"],RAC:["راسينج","ARG"],
+ SAN:["سانتوس","BRA"],FLA:["فلامنجو","BRA"],FLU:["فلومينينسي","BRA"],GRE:["جريميو","BRA"],SAO:["ساو باولو","BRA"],COR:["كورينثيانز","BRA"],INTE:["إنترناسيونال","BRA"],AMG:["أتلتيكو مينيرو","BRA"],VAS:["فاسكو دا جاما","BRA"],
+ RIV:["ريفر بليت","ARG"],BOC:["بوكا جونيورز","ARG"],IND:["إندبندينتي","ARG"],RAC:["راسينج","ARG"],ROS:["روزاريو سنترال","ARG"],
  POR:["بورتو","POR"],BEN:["بنفيكا","POR"],SPO:["سبورتنج لشبونة","POR"],
  AJX:["أياكس","NED"],PSV:["آيندهوفن","NED"],FEY:["فينورد","NED"],GRO:["جرونينجن","NED"],
  SAD:["السد","QAT"],EMI:["الإمارات","UAE"],BAN:["بني ياس","UAE"],VIS:["فيسيل كوبي","JPN"],
  MAL:["مالمو","SWE"],MOL:["مولده","NOR"],RBS:["سالزبورج","AUT"],BAS:["بازل","SUI"],GNK:["جينك","BEL"],AND:["أندرلخت","BEL"],CEL:["سيلتيك","SCO"],
- DZG:["دينامو زغرب","CRO"],LPO:["ليخ بوزنان","POL"],DKV:["دينامو كييف","UKR"],NAC:["ناسيونال","URU"],MTY:["مونتيري","MEX"],SYD:["سيدني","AUS"],OLY:["أولمبياكوس","GRE"]
+ DZG:["دينامو زغرب","CRO"],LPO:["ليخ بوزنان","POL"],DKV:["دينامو كييف","UKR"],NAC:["ناسيونال","URU"],MTY:["مونتيري","MEX"],LEO:["ليون المكسيكي","MEX"],SYD:["سيدني","AUS"],OLY:["أولمبياكوس","GRE"],MLN:["مييوناريوس","COL"],
+ PLM:["بالميراس","BRA"],HAJ:["هايدوك سبليت","CRO"],CCO:["كولو كولو","CHI"],LVT:["ليفانتي","LIGA"],NOB:["نيولز أولد بويز","ARG"],
+ BUR:["بيرنلي","EPL"],WOL:["وولفرهامبتون","EPL"],HUL:["هال سيتي","EPL"],MLG:["ملقا","LIGA"],BET:["ريال بيتيس","LIGA"],HOF:["هوفنهايم","BUN"],STE:["سانت إتيان","L1"]
 };
 const POS={GK:["حارس",0],CB:["قلب دفاع",1],LB:["ظهير أيسر",1],RB:["ظهير أيمن",1],CDM:["وسط دفاعي",2],CM:["وسط",2],CAM:["صانع ألعاب",2],LW:["جناح أيسر",3],RW:["جناح أيمن",3],ST:["مهاجم",3]};
 const FOOT={R:"اليمين",L:"الشمال"};
-// [arabic, english, nat, pos, born, foot, career clubs in order (last = current/last club), aliases]
+// [arabic, english, nat, pos, born, foot, "CLUB:from-to ..." (open end = still there), aliases]
 const RAW=[
-["ليونيل ميسي","Lionel Messi","AR","RW",1987,"L","BAR PSG MIA","ميسي ليو"],
-["كريستيانو رونالدو","Cristiano Ronaldo","PT","ST",1985,"R","SPO MUN RMA JUV NAS","رونالدو الدون CR7"],
-["رونالدينيو","Ronaldinho","BR","LW",1980,"R","GRE PSG BAR MIL FLA AMG FLU",""],
-["كاكا","Kaka","BR","CAM",1982,"R","SAO MIL RMA ORL",""],
-["زلاتان إبراهيموفيتش","Zlatan Ibrahimovic","SE","ST",1981,"R","MAL AJX JUV INT BAR MIL PSG MUN LAG","زلاتان ابرا"],
-["أندريس إنييستا","Andres Iniesta","ES","CM",1984,"R","BAR VIS EMI","انيستا"],
-["تشافي هيرنانديز","Xavi Hernandez","ES","CM",1980,"R","BAR SAD","تشافي"],
-["لوكا مودريتش","Luka Modric","HR","CM",1985,"R","DZG TOT RMA MIL",""],
-["كريم بنزيما","Karim Benzema","FR","ST",1987,"R","LYO RMA ITT",""],
-["روبرت ليفاندوفسكي","Robert Lewandowski","PL","ST",1988,"R","LPO BVB BAY BAR","ليفا"],
-["لويس سواريز","Luis Suarez","UY","ST",1987,"R","NAC GRO AJX LIV BAR ATM GRE MIA",""],
-["نيمار","Neymar","BR","LW",1992,"R","SAN BAR PSG HIL SAN","نيمار جونيور"],
-["كيليان مبابي","Kylian Mbappe","FR","ST",1998,"R","MON PSG RMA",""],
-["إيرلينج هالاند","Erling Haaland","NO","ST",2000,"L","MOL RBS BVB MCI","هالند"],
-["محمد صلاح","Mohamed Salah","EG","RW",1992,"L","MOK BAS CHE FIO ROM LIV","مو صلاح"],
-["كيفين دي بروين","Kevin De Bruyne","BE","CAM",1991,"R","GNK CHE WDB WOB MCI NAP","دي بروين"],
-["سيرجيو راموس","Sergio Ramos","ES","CB",1986,"R","SEV RMA PSG MTY",""],
-["جيرارد بيكيه","Gerard Pique","ES","CB",1987,"R","MUN BAR","بيكيه"],
-["كارليس بويول","Carles Puyol","ES","CB",1978,"R","BAR",""],
-["إيكر كاسياس","Iker Casillas","ES","GK",1981,"R","RMA POR",""],
-["جيانلويجي بوفون","Gianluigi Buffon","IT","GK",1978,"R","PAR JUV PSG",""],
-["مانويل نوير","Manuel Neuer","DE","GK",1986,"R","S04 BAY",""],
-["أندريا بيرلو","Andrea Pirlo","IT","CM",1979,"R","BRE INT MIL JUV NYC",""],
-["فرانشيسكو توتي","Francesco Totti","IT","CAM",1976,"R","ROM",""],
-["أليساندرو ديل بييرو","Alessandro Del Piero","IT","ST",1974,"R","JUV SYD",""],
-["فابيو كانافارو","Fabio Cannavaro","IT","CB",1973,"R","NAP PAR INT JUV RMA",""],
-["تييري هنري","Thierry Henry","FR","ST",1977,"R","MON JUV ARS BAR NYRB",""],
-["ستيفن جيرارد","Steven Gerrard","EN","CM",1980,"R","LIV LAG",""],
-["فرانك لامبارد","Frank Lampard","EN","CM",1978,"R","WHU CHE MCI NYC",""],
-["واين روني","Wayne Rooney","EN","ST",1985,"R","EVE MUN DCU",""],
-["ديدييه دروجبا","Didier Drogba","CI","ST",1978,"R","MAR CHE GAL","دروغبا"],
-["صامويل إيتو","Samuel Etoo","CM","ST",1981,"R","RMA MLL BAR INT CHE EVE","ايتو"],
-["يايا توريه","Yaya Toure","CI","CM",1983,"R","OLY MON BAR MCI",""],
-["آريين روبن","Arjen Robben","NL","RW",1984,"L","GRO PSV CHE RMA BAY GRO",""],
-["فرانك ريبيري","Franck Ribery","FR","LW",1983,"R","GAL MAR BAY FIO",""],
-["ويسلي شنايدر","Wesley Sneijder","NL","CAM",1984,"R","AJX RMA INT GAL",""],
-["توماس مولر","Thomas Muller","DE","CAM",1989,"R","BAY VAN",""],
-["فيليب لام","Philipp Lahm","DE","RB",1983,"R","BAY",""],
-["باستيان شفاينشتايجر","Bastian Schweinsteiger","DE","CM",1984,"R","BAY MUN CHF",""],
-["توني كروس","Toni Kroos","DE","CM",1990,"R","BAY LEV RMA",""],
-["مسعود أوزيل","Mesut Ozil","DE","CAM",1988,"L","S04 WDB RMA ARS FEN",""],
-["ميروسلاف كلوزه","Miroslav Klose","DE","ST",1978,"R","WDB BAY LAZ",""],
-["سيرجيو أجويرو","Sergio Aguero","AR","ST",1988,"R","IND ATM MCI BAR","اجويرو كون"],
-["أنخيل دي ماريا","Angel Di Maria","AR","RW",1988,"L","BEN RMA MUN PSG JUV BEN",""],
-["جونزالو هيجواين","Gonzalo Higuain","AR","ST",1987,"R","RIV RMA NAP JUV MIL CHE MIA",""],
-["كارلوس تيفيز","Carlos Tevez","AR","ST",1984,"R","BOC COR WHU MUN MCI JUV BOC",""],
-["خافيير ماسكيرانو","Javier Mascherano","AR","CDM",1984,"R","RIV COR WHU LIV BAR",""],
-["لاوتارو مارتينيز","Lautaro Martinez","AR","ST",1997,"R","RAC INT",""],
-["خوليان ألفاريز","Julian Alvarez","AR","ST",2000,"R","RIV MCI ATM",""],
-["إيميليانو مارتينيز","Emiliano Martinez","AR","GK",1992,"R","ARS AVL","ديبو"],
-["رونالدو نازاريو","Ronaldo Nazario","BR","ST",1976,"R","PSV BAR INT RMA MIL COR","الظاهرة"],
-["داني ألفيش","Dani Alves","BR","RB",1983,"R","SEV BAR JUV PSG",""],
-["مارسيلو","Marcelo","BR","LB",1988,"L","FLU RMA OLY FLU",""],
-["تياجو سيلفا","Thiago Silva","BR","CB",1984,"R","FLU MIL PSG CHE FLU",""],
-["كاسيميرو","Casemiro","BR","CDM",1992,"R","SAO RMA POR MUN",""],
-["فينيسيوس جونيور","Vinicius Junior","BR","LW",2000,"R","FLA RMA","فيني"],
-["أليسون بيكر","Alisson Becker","BR","GK",1992,"R","INTE ROM LIV",""],
-["فيليبي كوتينيو","Philippe Coutinho","BR","CAM",1992,"R","INT LIV BAR BAY AVL",""],
-["زين الدين زيدان","Zinedine Zidane","FR","CAM",1972,"R","JUV RMA","زيزو الفرنسي"],
-["أنطوان جريزمان","Antoine Griezmann","FR","ST",1991,"L","RSO ATM BAR ATM",""],
-["نجولو كانتي","Ngolo Kante","FR","CDM",1991,"R","CAE LEI CHE ITT",""],
-["بول بوجبا","Paul Pogba","FR","CM",1993,"R","MUN JUV MUN JUV MON",""],
-["هوجو لوريس","Hugo Lloris","FR","GK",1986,"L","NIC LYO TOT LAFC",""],
-["رافائيل فاران","Raphael Varane","FR","CB",1993,"R","LEN RMA MUN COM",""],
-["عثمان ديمبيلي","Ousmane Dembele","FR","RW",1997,"L","REN BVB BAR PSG",""],
-["إيدين هازارد","Eden Hazard","BE","LW",1991,"R","LIL CHE RMA",""],
-["تيبو كورتوا","Thibaut Courtois","BE","GK",1992,"L","GNK ATM CHE RMA",""],
-["فينسنت كومباني","Vincent Kompany","BE","CB",1986,"R","AND HSV MCI AND",""],
-["روميلو لوكاكو","Romelu Lukaku","BE","ST",1993,"L","AND CHE EVE MUN INT ROM NAP",""],
-["فيرجيل فان دايك","Virgil van Dijk","NL","CB",1991,"R","GRO CEL SOU LIV","فان دايك"],
-["روبن فان بيرسي","Robin van Persie","NL","ST",1983,"L","FEY ARS MUN FEN FEY",""],
-["فرينكي دي يونج","Frenkie de Jong","NL","CM",1997,"R","AJX BAR",""],
-["ديفيد بيكهام","David Beckham","EN","RW",1975,"R","MUN RMA LAG MIL PSG",""],
-["جون تيري","John Terry","EN","CB",1980,"R","CHE AVL",""],
-["ريو فيرديناند","Rio Ferdinand","EN","CB",1978,"R","WHU LEE MUN QPR",""],
-["هاري كين","Harry Kane","EN","ST",1993,"R","TOT BAY",""],
-["جود بيلينجهام","Jude Bellingham","EN","CAM",2003,"R","BVB RMA",""],
-["بوكايو ساكا","Bukayo Saka","EN","RW",2001,"L","ARS",""],
-["فيل فودين","Phil Foden","EN","CAM",2000,"L","MCI",""],
-["كول بالمر","Cole Palmer","EN","CAM",2002,"L","MCI CHE",""],
-["ترينت ألكسندر أرنولد","Trent Alexander-Arnold","EN","RB",1998,"R","LIV RMA","ترينت"],
-["فرناندو توريس","Fernando Torres","ES","ST",1984,"R","ATM LIV CHE MIL ATM",""],
-["ديفيد فيا","David Villa","ES","ST",1981,"R","VAL BAR ATM NYC",""],
-["ديفيد سيلفا","David Silva","ES","CAM",1986,"L","VAL MCI RSO",""],
-["سيرجيو بوسكيتس","Sergio Busquets","ES","CDM",1988,"R","BAR MIA",""],
-["سيسك فابريجاس","Cesc Fabregas","ES","CM",1987,"R","ARS BAR CHE MON","فابريجاس"],
-["تشابي ألونسو","Xabi Alonso","ES","CM",1981,"R","RSO LIV RMA BAY",""],
-["رودري","Rodri","ES","CDM",1996,"R","VIL ATM MCI",""],
-["بيدري","Pedri","ES","CM",2002,"R","BAR",""],
-["لامين يامال","Lamine Yamal","ES","RW",2007,"L","BAR",""],
-["جاريث بيل","Gareth Bale","WA","RW",1989,"L","SOU TOT RMA LAFC",""],
-["بيبي","Pepe","PT","CB",1983,"R","POR RMA BES POR",""],
-["برناردو سيلفا","Bernardo Silva","PT","CAM",1994,"L","BEN MON MCI",""],
-["برونو فيرنانديز","Bruno Fernandes","PT","CAM",1994,"R","UDI SAM SPO MUN",""],
-["أندريه شيفتشينكو","Andriy Shevchenko","UA","ST",1976,"R","DKV MIL CHE DKV","شيفتشينكو"],
-["بيتر تشيك","Petr Cech","CZ","GK",1982,"L","REN CHE ARS",""],
-["يان أوبلاك","Jan Oblak","SI","GK",1993,"R","BEN ATM",""],
-["محمد أبو تريكة","Mohamed Aboutrika","EG","CAM",1978,"R","AHLY BAN","تريكة الماجيكو"],
-["رياض محرز","Riyad Mahrez","DZ","RW",1991,"L","LEI MCI AHL",""],
-["أشرف حكيمي","Achraf Hakimi","MA","RB",1998,"R","RMA BVB INT PSG",""],
-["ساديو ماني","Sadio Mane","SN","LW",1992,"R","RBS SOU LIV BAY NAS",""],
-["سون هيونج مين","Son Heung-min","KR","LW",1992,"R","HSV LEV TOT LAFC","سون"],
-["بارك جي سونج","Park Ji-sung","KR","CM",1981,"R","PSV MUN QPR PSV",""],
-["جيانلويجي دوناروما","Gianluigi Donnarumma","IT","GK",1999,"R","MIL PSG MCI",""],
-["جورجيو كيليني","Giorgio Chiellini","IT","CB",1984,"L","JUV LAFC",""],
-["ماتس هوميلز","Mats Hummels","DE","CB",1988,"R","BAY BVB BAY BVB ROM",""],
-["ماركو رويس","Marco Reus","DE","CAM",1989,"R","BMG BVB LAG",""],
-["إلكاي جوندوجان","Ilkay Gundogan","DE","CM",1990,"R","BVB MCI BAR MCI GAL",""],
-["جمال موسيالا","Jamal Musiala","DE","CAM",2003,"R","BAY",""],
-["فلوريان فيرتز","Florian Wirtz","DE","CAM",2003,"R","LEV LIV",""],
-["يوشوا كيميش","Joshua Kimmich","DE","CDM",1995,"R","BAY",""],
-["إدينسون كافاني","Edinson Cavani","UY","ST",1987,"R","PAL NAP PSG MUN VAL BOC",""],
-["دييجو فورلان","Diego Forlan","UY","ST",1979,"R","MUN VIL ATM INT",""],
-["فيديريكو فالفيردي","Federico Valverde","UY","CM",1998,"R","RMA",""],
-["راداميل فالكاو","Radamel Falcao","CO","ST",1986,"R","RIV POR ATM MON MUN CHE GAL RAY",""],
-["خاميس رودريجيز","James Rodriguez","CO","CAM",1991,"L","POR MON RMA BAY EVE","خاميس"],
-["أليكسيس سانشيز","Alexis Sanchez","CL","RW",1988,"R","UDI BAR ARS MUN INT MAR UDI",""],
-["فيكتور أوسيمين","Victor Osimhen","NG","ST",1998,"R","LIL NAP GAL",""],
-["باولو ديبالا","Paulo Dybala","AR","CAM",1993,"L","PAL JUV ROM",""],
-["خفيتشا كفاراتسخيليا","Khvicha Kvaratskhelia","GE","LW",2001,"R","NAP PSG","كفارا"]
+["ليونيل ميسي","Lionel Messi","AR","RW",1987,"L","BAR:2004-2021 PSG:2021-2023 MIA:2023-","ميسي ليو"],
+["كريستيانو رونالدو","Cristiano Ronaldo","PT","ST",1985,"R","SPO:2002-2003 MUN:2003-2009 RMA:2009-2018 JUV:2018-2021 MUN:2021-2022 NAS:2023-","رونالدو الدون CR7"],
+["رونالدينيو","Ronaldinho","BR","LW",1980,"R","GRE:1998-2001 PSG:2001-2003 BAR:2003-2008 MIL:2008-2011 FLA:2011-2012 AMG:2012-2014 FLU:2015-2015",""],
+["كاكا","Kaka","BR","CAM",1982,"R","SAO:2001-2003 MIL:2003-2009 RMA:2009-2013 MIL:2013-2014 ORL:2015-2017",""],
+["زلاتان إبراهيموفيتش","Zlatan Ibrahimovic","SE","ST",1981,"R","MAL:1999-2001 AJX:2001-2004 JUV:2004-2006 INT:2006-2009 BAR:2009-2010 MIL:2010-2012 PSG:2012-2016 MUN:2016-2018 LAG:2018-2019 MIL:2020-2023","زلاتان ابرا"],
+["أندريس إنييستا","Andres Iniesta","ES","CM",1984,"R","BAR:2002-2018 VIS:2018-2023 EMI:2023-2024","انيستا"],
+["تشافي هيرنانديز","Xavi Hernandez","ES","CM",1980,"R","BAR:1998-2015 SAD:2015-2019","تشافي"],
+["لوكا مودريتش","Luka Modric","HR","CM",1985,"R","DZG:2003-2008 TOT:2008-2012 RMA:2012-2025 MIL:2025-",""],
+["كريم بنزيما","Karim Benzema","FR","ST",1987,"R","LYO:2004-2009 RMA:2009-2023 ITT:2023-",""],
+["روبرت ليفاندوفسكي","Robert Lewandowski","PL","ST",1988,"R","LPO:2008-2010 BVB:2010-2014 BAY:2014-2022 BAR:2022-","ليفا"],
+["لويس سواريز","Luis Suarez","UY","ST",1987,"R","NAC:2005-2006 GRO:2006-2007 AJX:2007-2011 LIV:2011-2014 BAR:2014-2020 ATM:2020-2022 NAC:2022-2022 GRE:2023-2024 MIA:2024-",""],
+["نيمار","Neymar","BR","LW",1992,"R","SAN:2009-2013 BAR:2013-2017 PSG:2017-2023 HIL:2023-2025 SAN:2025-","نيمار جونيور"],
+["كيليان مبابي","Kylian Mbappe","FR","ST",1998,"R","MON:2015-2017 PSG:2017-2024 RMA:2024-",""],
+["إيرلينج هالاند","Erling Haaland","NO","ST",2000,"L","MOL:2017-2019 RBS:2019-2020 BVB:2020-2022 MCI:2022-","هالند"],
+["محمد صلاح","Mohamed Salah","EG","RW",1992,"L","MOK:2010-2012 BAS:2012-2014 CHE:2014-2015 FIO:2015-2015 ROM:2015-2017 LIV:2017-","مو صلاح"],
+["كيفين دي بروين","Kevin De Bruyne","BE","CAM",1991,"R","GNK:2008-2012 WDB:2012-2013 CHE:2013-2014 WOB:2014-2015 MCI:2015-2025 NAP:2025-","دي بروين"],
+["سيرجيو راموس","Sergio Ramos","ES","CB",1986,"R","SEV:2003-2005 RMA:2005-2021 PSG:2021-2023 SEV:2023-2024 MTY:2025-",""],
+["جيرارد بيكيه","Gerard Pique","ES","CB",1987,"R","MUN:2004-2008 BAR:2008-2022","بيكيه"],
+["كارليس بويول","Carles Puyol","ES","CB",1978,"R","BAR:1999-2014",""],
+["إيكر كاسياس","Iker Casillas","ES","GK",1981,"R","RMA:1999-2015 POR:2015-2020",""],
+["جيانلويجي بوفون","Gianluigi Buffon","IT","GK",1978,"R","PAR:1995-2001 JUV:2001-2018 PSG:2018-2019 JUV:2019-2021 PAR:2021-2023",""],
+["مانويل نوير","Manuel Neuer","DE","GK",1986,"R","S04:2006-2011 BAY:2011-",""],
+["أندريا بيرلو","Andrea Pirlo","IT","CM",1979,"R","INT:1998-2001 BRE:2001-2001 MIL:2001-2011 JUV:2011-2015 NYC:2015-2017",""],
+["فرانشيسكو توتي","Francesco Totti","IT","CAM",1976,"R","ROM:1992-2017",""],
+["أليساندرو ديل بييرو","Alessandro Del Piero","IT","ST",1974,"R","JUV:1993-2012 SYD:2012-2014",""],
+["فابيو كانافارو","Fabio Cannavaro","IT","CB",1973,"R","NAP:1992-1995 PAR:1995-2002 INT:2002-2004 JUV:2004-2006 RMA:2006-2009 JUV:2009-2010",""],
+["تييري هنري","Thierry Henry","FR","ST",1977,"R","MON:1994-1999 JUV:1999-1999 ARS:1999-2007 BAR:2007-2010 NYRB:2010-2014",""],
+["ستيفن جيرارد","Steven Gerrard","EN","CM",1980,"R","LIV:1998-2015 LAG:2015-2016",""],
+["فرانك لامبارد","Frank Lampard","EN","CM",1978,"R","WHU:1995-2001 CHE:2001-2014 MCI:2014-2015 NYC:2015-2016",""],
+["واين روني","Wayne Rooney","EN","ST",1985,"R","EVE:2002-2004 MUN:2004-2017 EVE:2017-2018 DCU:2018-2019",""],
+["ديدييه دروجبا","Didier Drogba","CI","ST",1978,"R","MAR:2003-2004 CHE:2004-2012 GAL:2013-2014 CHE:2014-2015","دروغبا"],
+["صامويل إيتو","Samuel Etoo","CM","ST",1981,"R","RMA:1997-2000 MLL:2000-2004 BAR:2004-2009 INT:2009-2011 CHE:2013-2014 EVE:2014-2015","ايتو"],
+["يايا توريه","Yaya Toure","CI","CM",1983,"R","OLY:2005-2006 MON:2006-2007 BAR:2007-2010 MCI:2010-2018 OLY:2018-2018",""],
+["آريين روبن","Arjen Robben","NL","RW",1984,"L","GRO:2000-2002 PSV:2002-2004 CHE:2004-2007 RMA:2007-2009 BAY:2009-2019 GRO:2020-2021",""],
+["فرانك ريبيري","Franck Ribery","FR","LW",1983,"R","GAL:2005-2005 MAR:2005-2007 BAY:2007-2019 FIO:2019-2021",""],
+["ويسلي شنايدر","Wesley Sneijder","NL","CAM",1984,"R","AJX:2002-2007 RMA:2007-2009 INT:2009-2013 GAL:2013-2017",""],
+["توماس مولر","Thomas Muller","DE","CAM",1989,"R","BAY:2008-2025 VAN:2025-",""],
+["فيليب لام","Philipp Lahm","DE","RB",1983,"R","BAY:2002-2017",""],
+["باستيان شفاينشتايجر","Bastian Schweinsteiger","DE","CM",1984,"R","BAY:2002-2015 MUN:2015-2017 CHF:2017-2019",""],
+["توني كروس","Toni Kroos","DE","CM",1990,"R","BAY:2007-2009 LEV:2009-2010 BAY:2010-2014 RMA:2014-2024",""],
+["مسعود أوزيل","Mesut Ozil","DE","CAM",1988,"L","S04:2006-2008 WDB:2008-2010 RMA:2010-2013 ARS:2013-2021 FEN:2021-2022",""],
+["ميروسلاف كلوزه","Miroslav Klose","DE","ST",1978,"R","WDB:2004-2007 BAY:2007-2011 LAZ:2011-2016",""],
+["سيرجيو أجويرو","Sergio Aguero","AR","ST",1988,"R","IND:2003-2006 ATM:2006-2011 MCI:2011-2021 BAR:2021-2021","اجويرو كون"],
+["أنخيل دي ماريا","Angel Di Maria","AR","RW",1988,"L","BEN:2007-2010 RMA:2010-2014 MUN:2014-2015 PSG:2015-2022 JUV:2022-2023 BEN:2023-2025 ROS:2025-",""],
+["جونزالو هيجواين","Gonzalo Higuain","AR","ST",1987,"R","RIV:2005-2007 RMA:2007-2013 NAP:2013-2016 JUV:2016-2018 MIL:2018-2019 CHE:2019-2019 JUV:2019-2020 MIA:2020-2022",""],
+["كارلوس تيفيز","Carlos Tevez","AR","ST",1984,"R","BOC:2001-2004 COR:2005-2006 WHU:2006-2007 MUN:2007-2009 MCI:2009-2013 JUV:2013-2015 BOC:2015-2016 BOC:2018-2021",""],
+["خافيير ماسكيرانو","Javier Mascherano","AR","CDM",1984,"R","RIV:2003-2005 COR:2005-2006 WHU:2006-2007 LIV:2007-2010 BAR:2010-2018",""],
+["لاوتارو مارتينيز","Lautaro Martinez","AR","ST",1997,"R","RAC:2015-2018 INT:2018-",""],
+["خوليان ألفاريز","Julian Alvarez","AR","ST",2000,"R","RIV:2018-2022 MCI:2022-2024 ATM:2024-",""],
+["إيميليانو مارتينيز","Emiliano Martinez","AR","GK",1992,"R","ARS:2010-2020 AVL:2020-","ديبو"],
+["رونالدو نازاريو","Ronaldo Nazario","BR","ST",1976,"R","PSV:1994-1996 BAR:1996-1997 INT:1997-2002 RMA:2002-2007 MIL:2007-2008 COR:2009-2011","الظاهرة"],
+["داني ألفيش","Dani Alves","BR","RB",1983,"R","SEV:2002-2008 BAR:2008-2016 JUV:2016-2017 PSG:2017-2019 SAO:2019-2021 BAR:2022-2022",""],
+["مارسيلو","Marcelo","BR","LB",1988,"L","FLU:2005-2006 RMA:2007-2022 OLY:2022-2023 FLU:2023-2024",""],
+["تياجو سيلفا","Thiago Silva","BR","CB",1984,"R","FLU:2006-2009 MIL:2009-2012 PSG:2012-2020 CHE:2020-2024 FLU:2024-2025 POR:2026-",""],
+["كاسيميرو","Casemiro","BR","CDM",1992,"R","SAO:2010-2013 RMA:2013-2022 MUN:2022-",""],
+["فينيسيوس جونيور","Vinicius Junior","BR","LW",2000,"R","FLA:2017-2018 RMA:2018-","فيني"],
+["أليسون بيكر","Alisson Becker","BR","GK",1992,"R","INTE:2013-2016 ROM:2016-2018 LIV:2018-",""],
+["فيليبي كوتينيو","Philippe Coutinho","BR","CAM",1992,"R","INT:2010-2013 LIV:2013-2018 BAR:2018-2019 BAY:2019-2020 BAR:2020-2022 AVL:2022-2024 VAS:2024-",""],
+["زين الدين زيدان","Zinedine Zidane","FR","CAM",1972,"R","JUV:1996-2001 RMA:2001-2006","زيزو الفرنسي"],
+["أنطوان جريزمان","Antoine Griezmann","FR","ST",1991,"L","RSO:2009-2014 ATM:2014-2019 BAR:2019-2021 ATM:2021-",""],
+["نجولو كانتي","Ngolo Kante","FR","CDM",1991,"R","CAE:2013-2015 LEI:2015-2016 CHE:2016-2023 ITT:2023-",""],
+["بول بوجبا","Paul Pogba","FR","CM",1993,"R","MUN:2011-2012 JUV:2012-2016 MUN:2016-2022 JUV:2022-2024 MON:2025-",""],
+["هوجو لوريس","Hugo Lloris","FR","GK",1986,"L","NIC:2005-2008 LYO:2008-2012 TOT:2012-2023 LAFC:2024-",""],
+["رافائيل فاران","Raphael Varane","FR","CB",1993,"R","LEN:2010-2011 RMA:2011-2021 MUN:2021-2023 COM:2024-2024",""],
+["عثمان ديمبيلي","Ousmane Dembele","FR","RW",1997,"L","REN:2015-2016 BVB:2016-2017 BAR:2017-2023 PSG:2023-",""],
+["إيدين هازارد","Eden Hazard","BE","LW",1991,"R","LIL:2007-2012 CHE:2012-2019 RMA:2019-2023",""],
+["تيبو كورتوا","Thibaut Courtois","BE","GK",1992,"L","GNK:2009-2011 ATM:2011-2014 CHE:2014-2018 RMA:2018-",""],
+["فينسنت كومباني","Vincent Kompany","BE","CB",1986,"R","AND:2003-2006 HSV:2006-2008 MCI:2008-2019 AND:2019-2020",""],
+["روميلو لوكاكو","Romelu Lukaku","BE","ST",1993,"L","AND:2009-2011 CHE:2011-2013 EVE:2013-2017 MUN:2017-2019 INT:2019-2021 CHE:2021-2022 INT:2022-2023 ROM:2023-2024 NAP:2024-",""],
+["فيرجيل فان دايك","Virgil van Dijk","NL","CB",1991,"R","GRO:2011-2013 CEL:2013-2015 SOU:2015-2018 LIV:2018-","فان دايك"],
+["روبن فان بيرسي","Robin van Persie","NL","ST",1983,"L","FEY:2001-2004 ARS:2004-2012 MUN:2012-2015 FEN:2015-2018 FEY:2018-2019",""],
+["فرينكي دي يونج","Frenkie de Jong","NL","CM",1997,"R","AJX:2016-2019 BAR:2019-",""],
+["ديفيد بيكهام","David Beckham","EN","RW",1975,"R","MUN:1992-2003 RMA:2003-2007 LAG:2007-2012 PSG:2013-2013",""],
+["جون تيري","John Terry","EN","CB",1980,"R","CHE:1998-2017 AVL:2017-2018",""],
+["ريو فيرديناند","Rio Ferdinand","EN","CB",1978,"R","WHU:1995-2000 LEE:2000-2002 MUN:2002-2014 QPR:2014-2015",""],
+["هاري كين","Harry Kane","EN","ST",1993,"R","TOT:2011-2023 BAY:2023-",""],
+["جود بيلينجهام","Jude Bellingham","EN","CAM",2003,"R","BVB:2020-2023 RMA:2023-",""],
+["بوكايو ساكا","Bukayo Saka","EN","RW",2001,"L","ARS:2018-",""],
+["فيل فودين","Phil Foden","EN","CAM",2000,"L","MCI:2017-",""],
+["كول بالمر","Cole Palmer","EN","CAM",2002,"L","MCI:2020-2023 CHE:2023-",""],
+["ترينت ألكسندر أرنولد","Trent Alexander-Arnold","EN","RB",1998,"R","LIV:2016-2025 RMA:2025-","ترينت"],
+["فرناندو توريس","Fernando Torres","ES","ST",1984,"R","ATM:2001-2007 LIV:2007-2011 CHE:2011-2014 MIL:2014-2015 ATM:2015-2018",""],
+["ديفيد فيا","David Villa","ES","ST",1981,"R","VAL:2005-2010 BAR:2010-2013 ATM:2013-2014 NYC:2015-2018",""],
+["ديفيد سيلفا","David Silva","ES","CAM",1986,"L","VAL:2004-2010 MCI:2010-2020 RSO:2020-2023",""],
+["سيرجيو بوسكيتس","Sergio Busquets","ES","CDM",1988,"R","BAR:2008-2023 MIA:2023-2025",""],
+["سيسك فابريجاس","Cesc Fabregas","ES","CM",1987,"R","ARS:2003-2011 BAR:2011-2014 CHE:2014-2019 MON:2019-2022","فابريجاس"],
+["تشابي ألونسو","Xabi Alonso","ES","CM",1981,"R","RSO:1999-2004 LIV:2004-2009 RMA:2009-2014 BAY:2014-2017",""],
+["رودري","Rodri","ES","CDM",1996,"R","VIL:2015-2018 ATM:2018-2019 MCI:2019-",""],
+["بيدري","Pedri","ES","CM",2002,"R","BAR:2020-",""],
+["لامين يامال","Lamine Yamal","ES","RW",2007,"L","BAR:2023-",""],
+["جاريث بيل","Gareth Bale","WA","RW",1989,"L","SOU:2006-2007 TOT:2007-2013 RMA:2013-2020 TOT:2020-2021 RMA:2021-2022 LAFC:2022-2023",""],
+["بيبي","Pepe","PT","CB",1983,"R","POR:2004-2007 RMA:2007-2017 BES:2017-2019 POR:2019-2024",""],
+["برناردو سيلفا","Bernardo Silva","PT","CAM",1994,"L","BEN:2013-2014 MON:2014-2017 MCI:2017-",""],
+["برونو فيرنانديز","Bruno Fernandes","PT","CAM",1994,"R","UDI:2013-2016 SAM:2016-2017 SPO:2017-2020 MUN:2020-",""],
+["أندريه شيفتشينكو","Andriy Shevchenko","UA","ST",1976,"R","DKV:1994-1999 MIL:1999-2006 CHE:2006-2008 MIL:2008-2009 DKV:2009-2012","شيفتشينكو"],
+["بيتر تشيك","Petr Cech","CZ","GK",1982,"L","REN:2002-2004 CHE:2004-2015 ARS:2015-2019",""],
+["يان أوبلاك","Jan Oblak","SI","GK",1993,"R","BEN:2010-2014 ATM:2014-",""],
+["محمد أبو تريكة","Mohamed Aboutrika","EG","CAM",1978,"R","AHLY:2004-2012 BAN:2012-2013 AHLY:2013-2013","تريكة الماجيكو"],
+["رياض محرز","Riyad Mahrez","DZ","RW",1991,"L","LEI:2014-2018 MCI:2018-2023 AHL:2023-",""],
+["أشرف حكيمي","Achraf Hakimi","MA","RB",1998,"R","RMA:2016-2018 BVB:2018-2020 INT:2020-2021 PSG:2021-",""],
+["ساديو ماني","Sadio Mane","SN","LW",1992,"R","RBS:2012-2014 SOU:2014-2016 LIV:2016-2022 BAY:2022-2023 NAS:2023-",""],
+["سون هيونج مين","Son Heung-min","KR","LW",1992,"R","HSV:2010-2013 LEV:2013-2015 TOT:2015-2025 LAFC:2025-","سون"],
+["بارك جي سونج","Park Ji-sung","KR","CM",1981,"R","PSV:2003-2005 MUN:2005-2012 QPR:2012-2013 PSV:2013-2014",""],
+["جيانلويجي دوناروما","Gianluigi Donnarumma","IT","GK",1999,"R","MIL:2015-2021 PSG:2021-2025 MCI:2025-",""],
+["جورجيو كيليني","Giorgio Chiellini","IT","CB",1984,"L","JUV:2005-2022 LAFC:2022-2023",""],
+["ماتس هوميلز","Mats Hummels","DE","CB",1988,"R","BAY:2006-2008 BVB:2008-2016 BAY:2016-2019 BVB:2019-2024 ROM:2024-2025",""],
+["ماركو رويس","Marco Reus","DE","CAM",1989,"R","BMG:2009-2012 BVB:2012-2024 LAG:2024-",""],
+["إلكاي جوندوجان","Ilkay Gundogan","DE","CM",1990,"R","BVB:2011-2016 MCI:2016-2023 BAR:2023-2024 MCI:2024-2025 GAL:2025-",""],
+["جمال موسيالا","Jamal Musiala","DE","CAM",2003,"R","BAY:2020-",""],
+["فلوريان فيرتز","Florian Wirtz","DE","CAM",2003,"R","LEV:2020-2025 LIV:2025-",""],
+["يوشوا كيميش","Joshua Kimmich","DE","CDM",1995,"R","BAY:2015-",""],
+["إدينسون كافاني","Edinson Cavani","UY","ST",1987,"R","PAL:2007-2010 NAP:2010-2013 PSG:2013-2020 MUN:2020-2022 VAL:2022-2023 BOC:2023-",""],
+["دييجو فورلان","Diego Forlan","UY","ST",1979,"R","MUN:2002-2004 VIL:2004-2007 ATM:2007-2011 INT:2011-2012",""],
+["فيديريكو فالفيردي","Federico Valverde","UY","CM",1998,"R","RMA:2017-",""],
+["راداميل فالكاو","Radamel Falcao","CO","ST",1986,"R","RIV:2005-2009 POR:2009-2011 ATM:2011-2013 MON:2013-2014 MUN:2014-2015 CHE:2015-2016 MON:2016-2019 GAL:2019-2021 RAY:2021-2024 MLN:2024-",""],
+["خاميس رودريجيز","James Rodriguez","CO","CAM",1991,"L","POR:2010-2013 MON:2013-2014 RMA:2014-2017 BAY:2017-2019 RMA:2019-2020 EVE:2020-2021 RAY:2024-2025 LEO:2025-","خاميس"],
+["أليكسيس سانشيز","Alexis Sanchez","CL","RW",1988,"R","UDI:2008-2011 BAR:2011-2014 ARS:2014-2018 MUN:2018-2019 INT:2019-2022 MAR:2022-2023 INT:2023-2024 UDI:2024-2025 SEV:2025-",""],
+["فيكتور أوسيمين","Victor Osimhen","NG","ST",1998,"R","LIL:2019-2020 NAP:2020-2024 GAL:2024-",""],
+["باولو ديبالا","Paulo Dybala","AR","CAM",1993,"L","PAL:2012-2015 JUV:2015-2022 ROM:2022-",""],
+["خفيتشا كفاراتسخيليا","Khvicha Kvaratskhelia","GE","LW",2001,"R","NAP:2022-2025 PSG:2025-","كفارا"],
+["لويس فيجو","Luis Figo","PT","RW",1972,"R","SPO:1989-1995 BAR:1995-2000 RMA:2000-2005 INT:2005-2009","فيغو"],
+["روبرتو كارلوس","Roberto Carlos","BR","LB",1973,"L","PLM:1993-1995 INT:1995-1996 RMA:1996-2007 FEN:2007-2009 COR:2010-2011","روبيرتو"],
+["باولو مالديني","Paolo Maldini","IT","CB",1968,"R","MIL:1984-2009",""],
+["أليساندرو نيستا","Alessandro Nesta","IT","CB",1976,"R","LAZ:1993-2002 MIL:2002-2012",""],
+["إيفان راكيتيتش","Ivan Rakitic","HR","CM",1988,"R","BAS:2005-2007 S04:2007-2011 SEV:2011-2014 BAR:2014-2020 SEV:2020-2024 HAJ:2024-2025",""],
+["جوردي ألبا","Jordi Alba","ES","LB",1989,"L","VAL:2008-2012 BAR:2012-2023 MIA:2023-2025","يوردي"],
+["أرتورو فيدال","Arturo Vidal","CL","CM",1987,"R","LEV:2007-2011 JUV:2011-2015 BAY:2015-2018 BAR:2018-2020 INT:2020-2022 FLA:2022-2023 CCO:2024-",""],
+["رحيم ستيرلينج","Raheem Sterling","EN","LW",1994,"R","LIV:2012-2015 MCI:2015-2022 CHE:2022-2024 ARS:2024-2025 CHE:2025-",""],
+["ديكلان رايس","Declan Rice","EN","CM",1999,"R","WHU:2017-2023 ARS:2023-",""],
+["جواو كانسيلو","Joao Cancelo","PT","RB",1994,"R","BEN:2012-2014 VAL:2014-2017 INT:2017-2018 JUV:2018-2019 MCI:2019-2023 BAY:2023-2023 BAR:2023-2024 HIL:2024-",""],
+["كيلور نافاس","Keylor Navas","CR","GK",1986,"R","LVT:2011-2014 RMA:2014-2019 PSG:2019-2024 NOB:2025-",""],
+["مارتن أوديجارد","Martin Odegaard","NO","CAM",1998,"L","RMA:2015-2019 RSO:2019-2020 RMA:2020-2021 ARS:2021-",""],
+["رافائيل لياو","Rafael Leao","PT","LW",1999,"R","SPO:2017-2018 LIL:2018-2019 MIL:2019-",""],
+["فيتينيا","Vitinha","PT","CM",2000,"R","POR:2019-2022 PSG:2022-",""],
+["أنطونيو روديجر","Antonio Rudiger","DE","CB",1993,"R","ROM:2015-2017 CHE:2017-2022 RMA:2022-",""],
+["إيدرسون","Ederson","BR","GK",1993,"L","BEN:2015-2017 MCI:2017-2025 FEN:2025-",""],
+["كايل ووكر","Kyle Walker","EN","RB",1990,"R","TOT:2009-2017 MCI:2017-2025 MIL:2025-2025 BUR:2025-",""],
+["كينجسلي كومان","Kingsley Coman","FR","LW",1996,"R","PSG:2013-2014 JUV:2014-2015 BAY:2015-2025 NAS:2025-",""],
+["لوروا ساني","Leroy Sane","DE","RW",1996,"L","S04:2014-2016 MCI:2016-2020 BAY:2020-2025 GAL:2025-","ساني"],
+["دييجو كوستا","Diego Costa","ES","ST",1988,"R","ATM:2010-2014 CHE:2014-2018 ATM:2018-2020 AMG:2021-2021 WOL:2022-2023 GRE:2024-2024",""],
+["إيسكو","Isco","ES","CAM",1992,"R","VAL:2010-2011 MLG:2011-2013 RMA:2013-2022 SEV:2022-2022 BET:2023-",""],
+["داني كارفاخال","Dani Carvajal","ES","RB",1992,"R","LEV:2012-2013 RMA:2013-","كارباخال"],
+["ماركينيوس","Marquinhos","BR","CB",1994,"R","COR:2012-2012 ROM:2012-2013 PSG:2013-",""],
+["روبرتو فيرمينو","Roberto Firmino","BR","ST",1991,"R","HOF:2011-2015 LIV:2015-2023 AHL:2023-2025 SAD:2025-",""],
+["كاي هافيرتز","Kai Havertz","DE","ST",1999,"L","LEV:2016-2020 CHE:2020-2023 ARS:2023-",""],
+["أندرو روبرتسون","Andrew Robertson","SC","LB",1994,"L","HUL:2014-2017 LIV:2017-",""],
+["ويليام ساليبا","William Saliba","FR","CB",2001,"R","STE:2018-2020 NIC:2021-2021 MAR:2021-2022 ARS:2022-",""]
 ];
 
-const norm=s=>(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"")
+const norm=s=>(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯٓ-ٰٕ]/g,"")
   .replace(/ø/g,"o").replace(/ı/g,"i").replace(/ł/g,"l")
-  .replace(/[إأآٱ]/g,"ا").replace(/ة/g,"ه").replace(/ى/g,"ي").replace(/[ً-ْـ]/g,"")
+  .replace(/[إأآٱ]/g,"ا").replace(/ة/g,"ه").replace(/[ىی]/g,"ي").replace(/ک/g,"ك").replace(/گ/g,"ج").replace(/[ً-ْـ]/g,"")
   .replace(/[^\p{L}\p{N}]+/gu," ").trim();
+// Looser spelling: merges letters people swap when writing names in Arabic (غ/ج, ق/ك, ث/س ...),
+// drops inner long vowels and doubled latin letters, so "جريزمن" ≈ "غريزمان" and "Mbape" ≈ "Mbappe".
+const loose=s=>norm(s)
+  .replace(/غ/g,"ج").replace(/ق/g,"ك").replace(/[ثص]/g,"س").replace(/[ذظ]/g,"ز").replace(/ض/g,"د").replace(/ط/g,"ت").replace(/[ؤئء]/g,"ا").replace(/ه(?=\s|$)/g,"")
+  .replace(/ph/g,"f").replace(/[kq]/g,"c").replace(/([a-z])\1/g,"$1").replace(/y/g,"i")
+  .split(" ").map(w=>w.length>2?w[0]+w.slice(1).replace(/[اويaeiou]/g,""):w).join(" ");
+function lev(a,b){
+  if(Math.abs(a.length-b.length)>2)return 9;
+  let prev=Array.from({length:b.length+1},(_,i)=>i);
+  for(let i=1;i<=a.length;i++){
+    const cur=[i];
+    for(let j=1;j<=b.length;j++)cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));
+    prev=cur;
+  }
+  return prev[b.length];
+}
 
 const PLAYERS=RAW.map((r,i)=>{
-  const career=r[6].split(" ");
-  return{id:i,ar:r[0],en:r[1],nat:r[2],pos:r[3],born:r[4],foot:r[5],career,
-    clubs:new Set(career),last:career[career.length-1],leagues:new Set(career.map(c=>CLUB[c][1])),
-    keys:[r[0],r[1],...(r[7]||"").split(" ")].map(norm).filter(Boolean)};
+  const stints=r[6].split(" ").map(t=>{const[c,y]=t.split(":");const[a,b]=y.split("-");return{c,from:+a,to:b?+b:null};});
+  const lastSt=stints[stints.length-1];
+  return{id:i,ar:r[0],en:r[1],nat:r[2],pos:r[3],born:r[4],foot:r[5],stints,
+    clubs:new Set(stints.map(s=>s.c)),last:lastSt.c,active:lastSt.to===null,
+    leagues:new Set(stints.map(s=>CLUB[s.c][1])),
+    keys:[r[0],r[1],...(r[7]||"").split(" ")].map(norm).filter(Boolean),
+    lwords:[...new Set([r[0],r[1],...(r[7]||"").split(" ")].map(loose).join(" ").split(" ").filter(Boolean))],
+    // each name joined without spaces, from every word onward: "محمد ابو تريكه" -> "محمدابترك", "ابترك", "ترك"
+    lfull:[...new Set([r[0],r[1],...(r[7]||"").split(" ")].flatMap(k=>{const w=loose(k).split(" ").filter(Boolean);return w.map((_,i)=>w.slice(i).join(""));}))]};
 });
-const uniq=a=>[...new Set(a)];
+const age=p=>NOW-p.born;
+const statusTxt=p=>p.active?"لسه بيلعب":"معتزل";
+const overlap=(a,b)=>a.c===b.c&&a.from<(b.to??NOW+1)&&b.from<(a.to??NOW+1);
+function together(g,s){
+  const out=new Set();
+  for(const a of g.stints)for(const b of s.stints)if(overlap(a,b))out.add(a.c);
+  return[...out];
+}
 
 function compare(g,s){
   if(g.id===s.id)return{pct:100,parts:null};
   let pts=0;
-  const shared=[...g.clubs].filter(c=>s.clubs.has(c));
-  if(shared.length>=2)pts+=20;else if(shared.length===1)pts+=14;
-  const last=g.last===s.last; if(last)pts+=15;
-  const sharedLg=[...g.leagues].filter(l=>s.leagues.has(l)); if(sharedLg.length)pts+=10;
-  const nat=g.nat===s.nat; if(nat)pts+=20;
+  const tog=together(g,s); if(tog.length)pts+=25;
+  const shared=[...g.clubs].filter(c=>s.clubs.has(c)); if(shared.length)pts+=10;
+  const last=g.last===s.last; if(last)pts+=10;
+  const sharedLg=[...g.leagues].filter(l=>s.leagues.has(l)); if(sharedLg.length)pts+=5;
+  const nat=g.nat===s.nat; if(nat)pts+=15;
   const cont=NAT[g.nat][1]===NAT[s.nat][1]; if(cont)pts+=5;
-  const l1=POS[g.pos][1],l2=POS[s.pos][1];
   let posState="miss";
-  if(g.pos===s.pos){pts+=20;posState="hit";}
-  else if(l1===l2){pts+=12;posState="near";}
-  else if(Math.abs(l1-l2)===1){pts+=5;posState="near";}
+  if(g.pos===s.pos){pts+=15;posState="hit";}
+  else if(POS[g.pos][1]===POS[s.pos][1]){pts+=8;posState="near";}
   const d=g.born-s.born; // >0 means secret is older
   pts+=5*Math.max(0,1-Math.abs(d)/10);
   const foot=g.foot===s.foot; if(foot)pts+=5;
-  return{pct:Math.min(99,Math.round(pts)),parts:{shared,last,sharedLg,nat,cont,posState,d,foot}};
+  const status=g.active===s.active; if(status)pts+=5;
+  return{pct:Math.min(99,Math.round(pts)),parts:{tog,shared,last,sharedLg,nat,cont,posState,d,foot,status}};
 }
 
 const $=id=>document.getElementById(id);
 const state={secret:null,guesses:[],hints:0,over:false,wins:0};
 try{state.wins=+localStorage.getItem("wtp-wins")||0;}catch(e){}
 const AR_DIG=n=>String(n).replace(/\d/g,d=>"٠١٢٣٤٥٦٧٨٩"[d]);
+const decade=y=>({197:"السبعينات",198:"التمانينات",199:"التسعينات",200:"الألفينات"})[String(y).slice(0,3)]||y;
+const yrs=st=>st.to===null?`${st.from}–`:st.from===st.to?`${st.from}`:`${st.from}–${st.to}`;
 
 function hintList(s){
-  const mid=s.career[Math.floor((s.career.length-1)/2)];
+  const mid=s.stints[Math.floor((s.stints.length-1)/2)].c;
   return[
     ["القارة",CONT[NAT[s.nat][1]]],
+    ["الحالة",statusTxt(s)],
     ["المركز",POS[s.pos][0]],
     ["اتولد في",decade(s.born)],
     ["الجنسية",NAT[s.nat][0]],
     ["لعب في",CLUB[mid][0]],
-    ["آخر نادي",CLUB[s.last][0]]
+    [s.active?"ناديه الحالي":"آخر نادي",CLUB[s.last][0]]
   ];
 }
-const decade=y=>({197:"السبعينات",198:"التمانينات",199:"التسعينات",200:"الألفينات"})[String(y).slice(0,3)]||y;
+const MAX_HINTS=7;
 
 function newGame(keep){
   if(!keep){
@@ -363,7 +541,7 @@ function newGame(keep){
     state.secret=PLAYERS[n];state.guesses=[];state.hints=0;state.over=false;
   }
   $("q").disabled=state.over;$("go").disabled=state.over;$("giveBtn").disabled=state.over;
-  $("hintBtn").disabled=state.over||state.hints>=6;
+  $("hintBtn").disabled=state.over||state.hints>=MAX_HINTS;
   $("q").value="";closeList();$("msg").textContent="";
   render();
 }
@@ -373,78 +551,165 @@ function tempLabel(p){
   if(p>=100)return"🎯 هو ده!";
   if(p>=80)return"نار";if(p>=60)return"سخن";if(p>=40)return"دافي";if(p>=20)return"بارد";return"تلج";
 }
-const chip=(st,label,val,wide)=>`<div class="chip ${st}${wide?" wide":""}"><em>${label}</em><span>${val}</span></div>`;
+const chip=(st,label,val)=>`<div class="chip ${st}"><em>${label}</em><span>${val}</span></div>`;
+const clubNames=list=>list.map(k=>CLUB[k][0]).join("، ");
 
 function render(){
   const s=state.secret;
   $("sTries").textContent=state.guesses.length;
   $("sBest").textContent=state.guesses.reduce((m,g)=>Math.max(m,g.res.pct),0)+"%";
   $("sWins").textContent=state.wins;
-  $("hintBtn").textContent=`تلميح (${AR_DIG(state.hints)}/٦)`;
-  const H=hintList(s);
-  $("hints").innerHTML=H.slice(0,state.hints).map(h=>`<span>${h[0]}: <b>${h[1]}</b></span>`).join("");
+  const best=state.guesses.reduce((m,g)=>Math.max(m,g.res.pct),0);
+  $("mark").style.right=best+"%";
+  $("hintBtn").textContent=state.hints>=MAX_HINTS?"خلصت التلميحات":`تلميح: ${hintList(s)[state.hints][0]} (${AR_DIG(state.hints)}/${AR_DIG(MAX_HINTS)})`;
+  $("hints").innerHTML=hintList(s).slice(0,state.hints).map(h=>`<span>${h[0]}: <b>${h[1]}</b></span>`).join("");
 
   const r=$("result");
   if(state.over){
     const won=state.guesses.some(g=>g.res.pct===100),n=state.guesses.length;
-    r.hidden=false;
+    r.hidden=false;r.classList.toggle("celebrate",won);
     r.innerHTML=`<h2>${won?"جبتها! 🎉":"اللاعب كان…"}</h2>
       <p><strong>${s.ar}</strong> · <span dir="ltr">${s.en}</span></p>
-      <p style="color:var(--chalk-dim)">${NAT[s.nat][0]} · ${POS[s.pos][0]} · مواليد ${s.born}</p>
-      <p style="color:var(--chalk-dim)">المسيرة: ${uniq(s.career).map(c=>CLUB[c][0]).join(" ← ")}</p>
+      <p style="color:var(--chalk-dim)">${NAT[s.nat][0]} · ${POS[s.pos][0]} · مواليد ${s.born} (${age(s)} سنة) · ${statusTxt(s)}</p>
+      <div class="career" style="justify-content:center">${s.stints.map(t=>`<span>${CLUB[t.c][0]}<small>${yrs(t)}</small></span>`).join("")}</div>
       ${won?`<p>في ${n} ${n===1?"محاولة":"محاولات"}${state.hints?` و${state.hints} تلميح`:""}</p>`:""}
       <div><button class="primary" type="button" id="again">العب تاني</button></div>`;
     $("again").onclick=()=>newGame();
   }else r.hidden=true;
 
   const ol=$("guesses");
+  $("listTitle").hidden=state.guesses.length<2;
   if(!state.guesses.length){ol.innerHTML=`<li class="empty">لسه مخمنتش. ابدأ بأي لاعب تعرفه، والنسبة هتوجهك.</li>`;return;}
   const latest=state.guesses[state.guesses.length-1].p.id;
   ol.innerHTML=[...state.guesses].sort((a,b)=>b.res.pct-a.res.pct).map(({p,res})=>{
     const c=heat(res.pct),x=res.parts;
-    const sharedSet=new Set(x?x.shared:p.career);
-    const career=uniq(p.career).map(k=>sharedSet.has(k)?`<span class="shared">${CLUB[k][0]}</span>`:`<b>${CLUB[k][0]}</b>`).join(" · ");
-    let chips;
+    const togSet=new Set(x?x.tog:[...p.clubs]),shSet=new Set(x?x.shared:[...p.clubs]);
+    const career=p.stints.map(t=>{
+      const cls=togSet.has(t.c)&&s.stints.some(b=>overlap(t,b))?"together":shSet.has(t.c)?"shared":"";
+      return `<span class="${cls}">${CLUB[t.c][0]}<small>${yrs(t)}</small></span>`;
+    }).join("");
+    let links,chips;
     if(!x){
-      chips=chip("hit","أندية مشتركة","كلها",true)+chip("hit","آخر نادي",CLUB[p.last][0])+chip("hit","دوري مشترك",LEAGUE[CLUB[p.last][1]])
-        +chip("hit","الجنسية",NAT[p.nat][0])+chip("hit","المركز",POS[p.pos][0])+chip("hit","المواليد",p.born)+chip("hit","القدم",FOOT[p.foot]);
+      links=chip("hit","لعبوا مع بعض","هو نفس اللاعب")+chip("hit","أندية مشتركة","كلها");
+      chips=chip("hit",p.active?"ناديه الحالي":"آخر نادي",CLUB[p.last][0])+chip("hit","دوري مشترك","كلها")
+        +chip("hit","الجنسية",NAT[p.nat][0])+chip("hit","المركز",POS[p.pos][0])
+        +chip("hit","المواليد",`${p.born} (${age(p)} سنة)`)+chip("hit","القدم",FOOT[p.foot])+chip("hit","الحالة",statusTxt(p));
     }else{
       const arrow=x.d>0?" ↑":x.d<0?" ↓":"";
-      const sh=x.shared.length?x.shared.map(k=>CLUB[k][0]).join("، "):"مفيش";
       const lg=x.sharedLg.length?x.sharedLg.slice(0,2).map(l=>LEAGUE[l]).join("، ")+(x.sharedLg.length>2?" +"+(x.sharedLg.length-2):""):"مفيش";
-      chips=chip(x.shared.length>=2?"hit":x.shared.length?"near":"miss","أندية مشتركة",sh,true)
-        +chip(x.last?"hit":"miss","آخر نادي",CLUB[p.last][0])
-        +chip(x.sharedLg.length?"near":"miss","دوري مشترك",lg)
+      links=chip(x.tog.length?"hit":"miss","لعبوا مع بعض",x.tog.length?"أيوه في "+clubNames(x.tog):"لأ")
+        +chip(x.shared.length?"hit":"miss","أندية مشتركة",x.shared.length?clubNames(x.shared):"مفيش");
+      chips=chip(x.last?"hit":"miss",p.active?"ناديه الحالي":"آخر نادي",CLUB[p.last][0])
+        +chip(x.sharedLg.length?"hit":"miss","دوري مشترك",lg)
         +chip(x.nat?"hit":x.cont?"near":"miss","الجنسية",NAT[p.nat][0])
         +chip(x.posState,"المركز",POS[p.pos][0])
-        +chip(x.d===0?"hit":Math.abs(x.d)<=3?"near":"miss","المواليد",p.born+arrow)
-        +chip(x.foot?"hit":"miss","القدم",FOOT[p.foot]);
+        +chip(x.d===0?"hit":Math.abs(x.d)<=3?"near":"miss","المواليد",`${p.born} (${age(p)} سنة)${arrow}`)
+        +chip(x.foot?"hit":"miss","القدم",FOOT[p.foot])
+        +chip(x.status?"hit":"miss","الحالة",statusTxt(p));
     }
     return `<li class="card${p.id===latest?" latest":""}">
       <div class="top">
         <div class="pct" style="color:${c}">${res.pct}%</div>
-        <div class="who"><strong>${p.ar}</strong><small>${p.en}</small></div>
+        <div class="who">${p.id===latest&&state.guesses.length>1?`<span class="badge">آخر تخمين</span>`:""}<strong>${p.ar}</strong><small>${p.en}</small></div>
         <span class="temp" style="color:${c}">${tempLabel(res.pct)}</span>
       </div>
       <div class="bar"><i style="width:${res.pct}%;background:${c}"></i></div>
-      <div class="career">مسيرته: ${career}</div>
+      <div class="career">${career}</div>
+      <div class="links">${links}</div>
       <div class="chips">${chips}</div>
     </li>`;
   }).join("");
+  if(state.fresh){
+    state.fresh=false;
+    const card=ol.querySelector(".card.latest");
+    if(card){
+      const el=card.querySelector(".pct"),target=state.guesses[state.guesses.length-1].res.pct;
+      if(!REDUCED){
+        const t0=performance.now(),dur=600;
+        const step=now=>{const k=Math.min(1,(now-t0)/dur),v=Math.round(target*(1-Math.pow(1-k,3)));el.textContent=v+"%";if(k<1)requestAnimationFrame(step);};
+        el.textContent="0%";requestAnimationFrame(step);
+      }
+      card.scrollIntoView({block:"nearest",behavior:REDUCED?"auto":"smooth"});
+    }
+  }
+}
+
+/* ---------- sound ---------- */
+const REDUCED=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+let muted=false,actx=null;
+try{muted=localStorage.getItem("wtp-muted")==="1";}catch(e){}
+function ac(){
+  if(!actx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;try{actx=new C();}catch(e){return null;}}
+  if(actx.state==="suspended")actx.resume();
+  return actx;
+}
+function tone(f,at,dur,type="triangle",vol=.12){
+  if(muted)return;const a=ac();if(!a)return;
+  const o=a.createOscillator(),g=a.createGain(),s=a.currentTime+at;
+  o.type=type;o.frequency.setValueAtTime(f,s);
+  g.gain.setValueAtTime(.0001,s);g.gain.exponentialRampToValueAtTime(vol,s+.015);g.gain.exponentialRampToValueAtTime(.0001,s+dur);
+  o.connect(g);g.connect(a.destination);o.start(s);o.stop(s+dur+.05);
+}
+const SFX={
+  guess:p=>{const b=196+p*4.5;tone(b,0,.12);tone(b*1.26,.09,.18);},
+  win:()=>{[523,659,784,1047].forEach((f,i)=>tone(f,i*.11,.3,"triangle",.14));tone(1319,.46,.6,"sine",.08);},
+  hint:()=>{tone(880,0,.09,"sine",.08);tone(1175,.08,.14,"sine",.08);},
+  lose:()=>{[392,330,262].forEach((f,i)=>tone(f,i*.17,.32,"triangle",.1));},
+  err:()=>tone(140,0,.18,"square",.04),
+  tap:()=>tone(700,0,.05,"sine",.05)
+};
+const ICON_ON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg>';
+const ICON_OFF='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
+function paintMute(){
+  const b=$("muteBtn");b.innerHTML=muted?ICON_OFF:ICON_ON;b.setAttribute("aria-pressed",muted);
+  b.setAttribute("aria-label",muted?"الصوت مقفول، اضغط للتشغيل":"الصوت شغال، اضغط للكتم");
+}
+$("muteBtn").addEventListener("click",()=>{muted=!muted;try{localStorage.setItem("wtp-muted",muted?"1":"0");}catch(e){}paintMute();SFX.tap();});
+paintMute();
+
+/* ---------- confetti ---------- */
+function confetti(){
+  if(REDUCED)return;
+  const c=$("fx"),x=c.getContext("2d"),dpr=window.devicePixelRatio||1;
+  c.hidden=false;c.width=innerWidth*dpr;c.height=innerHeight*dpr;x.scale(dpr,dpr);
+  const cols=["#f6d85a","#eef4ec","#3fcf7c","#ff7a59","#5aa9ff"];
+  const ps=Array.from({length:140},()=>({x:innerWidth/2+(Math.random()-.5)*80,y:innerHeight*.35,vx:(Math.random()-.5)*12,vy:-Math.random()*13-4,
+    r:Math.random()*6+4,a:Math.random()*6,va:(Math.random()-.5)*.3,c:cols[Math.random()*cols.length|0]}));
+  const t0=performance.now();
+  (function frame(now){
+    const t=now-t0;x.clearRect(0,0,innerWidth,innerHeight);
+    for(const p of ps){p.vy+=.35;p.vx*=.99;p.x+=p.vx;p.y+=p.vy;p.a+=p.va;
+      x.save();x.globalAlpha=Math.max(0,1-t/2200);x.translate(p.x,p.y);x.rotate(p.a);x.fillStyle=p.c;x.fillRect(-p.r/2,-p.r/4,p.r,p.r/2);x.restore();}
+    if(t<2200)requestAnimationFrame(frame);else{x.clearRect(0,0,innerWidth,innerHeight);c.hidden=true;}
+  })(t0);
 }
 
 function submitGuess(p){
   if(state.over)return;
-  if(state.guesses.some(g=>g.p.id===p.id)){$("msg").textContent=`خمّنت ${p.ar} قبل كده. جرّب لاعب تاني.`;return;}
+  if(state.guesses.some(g=>g.p.id===p.id)){$("msg").textContent=`خمّنت ${p.ar} قبل كده. جرّب لاعب تاني.`;SFX.err();return;}
   const res=compare(p,state.secret);
-  state.guesses.push({p,res});
-  if(res.pct===100){state.over=true;state.wins++;try{localStorage.setItem("wtp-wins",state.wins);}catch(e){}}
+  state.guesses.push({p,res});state.fresh=true;
+  if(res.pct===100){
+    state.over=true;state.wins++;try{localStorage.setItem("wtp-wins",state.wins);}catch(e){}
+    SFX.win();confetti();
+  }else SFX.guess(res.pct);
   newGame(true);
+  if(state.over)$("result").scrollIntoView({block:"center",behavior:REDUCED?"auto":"smooth"});
 }
+
+/* ---------- how-to-play ---------- */
+let lastFocus=null;
+function openHelp(){lastFocus=document.activeElement;$("help").hidden=false;$("helpClose").focus();}
+function closeHelp(){$("help").hidden=true;try{localStorage.setItem("wtp-seen-help","1");}catch(e){}SFX.tap();(lastFocus&&lastFocus!==document.body?lastFocus:$("q")).focus();}
+$("helpBtn").addEventListener("click",openHelp);
+$("helpClose").addEventListener("click",closeHelp);
+$("help").addEventListener("click",e=>{if(e.target.id==="help")closeHelp();});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("help").hidden)closeHelp();});
 
 let matches=[],active=-1;
 function search(t){
   const n=norm(t);if(!n)return[];
+  const qWords=loose(n).split(" ").filter(Boolean);
   return PLAYERS.map(p=>{
     let sc=99;
     for(const k of p.keys){
@@ -453,14 +718,38 @@ function search(t){
       else if(k.split(" ").some(w=>w.startsWith(n)))sc=Math.min(sc,2);
       else if(k.includes(n))sc=Math.min(sc,3);
     }
+    if(sc>3&&qWords.length){
+      // fuzzy: every typed word must be close to some word of the name (or to its start, while typing)
+      let total=0,ok=true;
+      for(const q of qWords){
+        const thr=q.length<=2?0:q.length<=4?1:2;
+        let best=9;
+        for(const w of p.lwords){
+          if(w.startsWith(q)){best=0;break;}
+          best=Math.min(best,lev(q,w));
+          if(q.length>=3&&w.length>q.length)best=Math.min(best,lev(q,w.slice(0,q.length))+0.5);
+        }
+        if(best>thr){ok=false;break;}
+        total+=best;
+      }
+      if(ok)sc=4+total;
+      // the whole name typed as one word or with spaces in other places ("ابوتريكه", "vandijk")
+      const qj=qWords.join("");
+      if(qj.length>=4)for(const f of p.lfull){
+        const d=Math.min(lev(qj,f),f.length>qj.length?lev(qj,f.slice(0,qj.length))+0.5:9);
+        if(d<=(qj.length<=6?1:2))sc=Math.min(sc,4+d);
+      }
+    }
     return{p,sc};
-  }).filter(x=>x.sc<99).sort((a,b)=>a.sc-b.sc).slice(0,8).map(x=>x.p);
+  }).filter(x=>x.sc<99).sort((a,b)=>a.sc-b.sc)
+    .filter((x,_,all)=>all[0].sc>3||x.sc<=3) // when the name matches as typed, hide the guesses
+    .slice(0,8).map(x=>x.p);
 }
 function openList(){
   const ul=$("list");
   if(!matches.length){closeList();return;}
   const used=new Set(state.guesses.map(g=>g.p.id));
-  ul.innerHTML=matches.map((p,i)=>`<li role="option" id="opt${i}" data-i="${i}" aria-selected="${i===active}" class="${used.has(p.id)?"used":""}"><span>${p.ar}</span><small>${p.en}</small></li>`).join("");
+  ul.innerHTML=matches.map((p,i)=>`<li role="option" id="opt${i}" data-i="${i}" aria-selected="${i===active}" class="${used.has(p.id)?"used":""}"><span class="opt"><span>${p.ar}</span><small class="meta">${NAT[p.nat][0]} · ${POS[p.pos][0]}</small></span><small>${p.en}</small></li>`).join("");
   ul.hidden=false;$("q").setAttribute("aria-expanded","true");
   if(active>=0)$("q").setAttribute("aria-activedescendant","opt"+active);
 }
@@ -485,9 +774,16 @@ $("form").addEventListener("submit",e=>{
   if(!m){$("msg").textContent="اللاعب ده مش في القائمة. جرّب تكتب الاسم بطريقة تانية أو بالإنجليزي.";return;}
   submitGuess(m);
 });
-$("hintBtn").addEventListener("click",()=>{if(state.hints<6&&!state.over){state.hints++;newGame(true);}});
-$("giveBtn").addEventListener("click",()=>{state.over=true;newGame(true);});
-$("newBtn").addEventListener("click",()=>newGame());
+$("hintBtn").addEventListener("click",()=>{if(state.hints<MAX_HINTS&&!state.over){state.hints++;SFX.hint();newGame(true);}});
+let giveTimer=null;
+function disarmGive(){clearTimeout(giveTimer);const b=$("giveBtn");b.classList.remove("armed");b.textContent="استسلم";}
+$("giveBtn").addEventListener("click",()=>{
+  const b=$("giveBtn");
+  if(!b.classList.contains("armed")){b.classList.add("armed");b.textContent="متأكد؟ اضغط تاني";clearTimeout(giveTimer);giveTimer=setTimeout(disarmGive,3000);return;}
+  disarmGive();state.over=true;SFX.lose();newGame(true);
+  $("result").scrollIntoView({block:"center",behavior:REDUCED?"auto":"smooth"});
+});
+$("newBtn").addEventListener("click",()=>{disarmGive();SFX.tap();newGame();window.scrollTo({top:0,behavior:REDUCED?"auto":"smooth"});});
 
 window.claude?.hot?.snapshot?.(()=>({secret:state.secret&&state.secret.en,guesses:state.guesses.map(g=>g.p.en),hints:state.hints,over:state.over}));
 function start(d){
@@ -495,10 +791,11 @@ function start(d){
   if(d&&d.secret&&byEn(d.secret)){
     state.secret=byEn(d.secret);
     state.guesses=(d.guesses||[]).map(byEn).filter(Boolean).map(p=>({p,res:compare(p,state.secret)}));
-    state.hints=d.hints||0;state.over=!!d.over;newGame(true);
+    state.hints=Math.min(d.hints||0,MAX_HINTS);state.over=!!d.over;newGame(true);
   }else newGame();
 }
 window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
+try{if(!localStorage.getItem("wtp-seen-help"))openHelp();}catch(e){openHelp();}
 </script>
 
 </body></html>
